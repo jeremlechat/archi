@@ -14,7 +14,6 @@
 #include "font.h"
 #include <time.h>
 
-
 volatile int mouse_x = 0;
 volatile int mouse_y = 0;
 volatile int deplace_x_mouse = 0;
@@ -46,8 +45,6 @@ volatile int change_move_right = 0;
 volatile int change_move_left = 0;
 volatile double time_pressed = 0;
 volatile clock_t start = 0;
-volatile pthread_mutex_t right;
-volatile pthread_mutex_t left;
 
 
 
@@ -326,22 +323,17 @@ void init_marble() {
 void move_plate() {
 	while(1) {
 		if (!is_game_over) {
-			xSemaphoreTake(right);
 			if (change_move_right) {			//On décide d'aller à droite
 				start = clock();
 				change_move_right = 0;
 			}
-			xSemaphoreGive(right, NULL);
-			xSemaphoreTake(left, NULL);
 			if (change_move_left) {			//On décide d'aller à gauche
 				start = clock();
 				change_move_left = 0;
 			}
-			xSemaphoreGive(left, NULL);
 
 			clock_t time = (clock() - start)/100000;
 			printf("Temps de presse = %d\n" , time);
-			xSemaphoreTake(right);
 			if (is_moving_right) {
 				draw_square(plate_pos_x, plate_pos_y, deplace_x_mouse, plate_height, 0x00000000);
 				plate_pos_x = (int)( 1 + time/3) +plate_pos_x;
@@ -350,8 +342,6 @@ void move_plate() {
 				}
 				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00ffffff);
 			}
-			xSemaphoreGive(right, NULL);
-			xSemaphoreTake(left, NULL );
 			if (is_moving_left) {
 				draw_square(plate_pos_x, plate_pos_y, deplace_x_mouse, plate_height, 0x00000000);
 				plate_pos_x = - (int)( 1 + time/3) +plate_pos_x;
@@ -360,7 +350,6 @@ void move_plate() {
 				}
 				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00ffffff);
 			}
-			xSemaphoreGive(left, NULL);
 //Gere la double touche 
 		}
 	}
@@ -411,20 +400,16 @@ void keyboard_interrupt_handler() {
 					memset(frame_buffer, 0, sizeof(frame_buffer)); // clear frame buffer
 					break;
 				case 79 :
-					xSemaphoreTakeFromISR(right);
 					if (!is_moving_right) {
 						change_move_right = 1;
 					}
 					is_moving_right = 1;
-					xSemaphoreGiveFromISR(right);
 					break;
 				case 80 :
-					xSemaphoreTakeFromISR(left);
 					if (!is_moving_left) {
 						change_move_left = 1;
 					}
 					is_moving_left = 1;
-					xSemaphoreTakeFromISR(left);
 					break;
 				default:
 					is_moving_left = 0;
