@@ -29,11 +29,11 @@ volatile int marble_pos_x;
 volatile int marble_pos_y;
 volatile int marble_radius = 8;
 volatile float marble_speed = 5;
-volatile double marble_angle = 45*M_PI/180;		//L'angle est en radian
+volatile double marble_angle = 65*M_PI/180;		//L'angle est en radian
 volatile int left_button_is_pressed = 0;
 volatile int bric_height = 80;	
 volatile int bric_width = 60;
-volatile int ecart = 3;
+volatile int ecart = 1;
 SemaphoreHandle_t ksem;
 //volatile pthread_mutex_t mutex;
 volatile int nb_bric_changed = 0;
@@ -41,8 +41,9 @@ volatile int is_game_over = 1;
 volatile int delay = 20;
 volatile int is_moving_right = 0;
 volatile int is_moving_left = 0;
-volatile int change_move_right = 0;
-volatile int change_move_left = 0;
+volatile int long_move_right = 0;
+volatile int long_move_left = 0;
+volatile int long_press = 0;
 volatile double time_pressed = 0;
 volatile clock_t start = 0;
 
@@ -220,18 +221,19 @@ void game_over() {
 }
 
 void collision_plate() {
+	int local_ecart = 17;
 	while (1) { 	
-		if (marble_pos_y > SCREEN_HEIGHT) {
+		if (marble_pos_y > SCREEN_HEIGHT - plate_height - plate_y_shift) {
 			game_over();
 		}
-		if (marble_pos_y > SCREEN_HEIGHT-plate_height-plate_y_shift-20 ) {
-//			if (marble_pos_x > plate_pos_x && marble_pos_x < plate_pos_x + plate_width) {
+		if (marble_pos_y > SCREEN_HEIGHT-plate_height-plate_y_shift - local_ecart && marble_pos_y < SCREEN_HEIGHT - plate_y_shift) {
+			if (marble_pos_x > plate_pos_x && marble_pos_x < plate_pos_x + plate_width) {
 				printf("collision avec le plateau\n");
 //				printf("ON est avant le rebond angle = %.2f\n", marble_angle);
 				rebondi_horizontal();
-				vTaskDelay(MS2TICKS(delay));
+				vTaskDelay(MS2TICKS(2*delay));
 
-//			}
+			}
 		}
 	}
 }
@@ -315,43 +317,72 @@ void init_plate() {
 
 void init_marble() {
 	printf("angle inital = %.2f\n", marble_angle);
-	draw_disk(plate_pos_x + plate_width/2 - marble_radius/2, plate_pos_y - 100, marble_radius, 0x00ff0000);
+	draw_disk(plate_pos_x + plate_width/2 - marble_radius/2, plate_pos_y - 300, marble_radius, 0x00ff0000);
 	marble_pos_x = plate_pos_x + plate_width/2 - marble_radius/2;
-	marble_pos_y = plate_pos_y - 100;
+	marble_pos_y = plate_pos_y - 300;
 }
 
 void move_plate() {
+	int facteur = 20;
 	while(1) {
 		if (!is_game_over) {
-			if (change_move_right) {			//On décide d'aller à droite
+			if (long_move_left && long_press == 0) {
 				start = clock();
-				change_move_right = 0;
+				long_press = 1;
 			}
-			if (change_move_left) {			//On décide d'aller à gauche
+			if (long_move_left && long_press == 0) {
 				start = clock();
-				change_move_left = 0;
+				long_press = 1;
 			}
 
-			clock_t time = (clock() - start)/100000;
-			printf("Temps de presse = %d\n" , time);
-			if (is_moving_right) {
-				draw_square(plate_pos_x, plate_pos_y, deplace_x_mouse, plate_height, 0x00000000);
-				plate_pos_x = (int)( 1 + time/3) +plate_pos_x;
+			double time = (double)(clock() - start)/CLOCKS_PER_SEC;
+			printf("Temps de presse = %.2f\n" , time);
+			printf("le plateau est en %d\n", plate_pos_x);
+			if (long_move_right) {
+				printf("appuie long droite ::::::::::::::::::::: \n");
+				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00000000);
+				plate_pos_x = (int)(( 1 + time/3) * facteur) + plate_pos_x;
 				if (plate_pos_x+plate_width>SCREEN_WIDTH) {
 					plate_pos_x = SCREEN_WIDTH - plate_width;
 				}
 				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00ffffff);
-			}
-			if (is_moving_left) {
-				draw_square(plate_pos_x, plate_pos_y, deplace_x_mouse, plate_height, 0x00000000);
-				plate_pos_x = - (int)( 1 + time/3) +plate_pos_x;
+				long_move_right = 0;
+			} else if (long_move_left) {
+				printf("appuie long gache ::::::::::::::::::::: \n");
+				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00000000);
+				plate_pos_x = - (int)(( 1 + time/3) * facteur) + plate_pos_x;
 				if (plate_pos_x < 0) {
 					plate_pos_x = 0;
 				}
 				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00ffffff);
+				long_move_left = 0;
+			} else {
+				printf("on annule le t e m p s   d e   p r e s s e    ! ! !  ! !  ! ! ! !");
+				long_press = 0;
 			}
+			if (is_moving_right) {
+				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00000000);
+				plate_pos_x = facteur + plate_pos_x;
+				if (plate_pos_x+plate_width>SCREEN_WIDTH) {
+					plate_pos_x = SCREEN_WIDTH - plate_width;
+				}
+				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00ffffff);
+				is_moving_right = 0;
+			} else if (is_moving_left) {
+				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00000000);
+				plate_pos_x = -facteur + plate_pos_x;
+				if (plate_pos_x < 0) {
+					plate_pos_x = 0;
+				}
+				draw_square(plate_pos_x, plate_pos_y, plate_width, plate_height, 0x00ffffff);
+				is_moving_left = 0;
+			}
+
+			printf("le plateau est désormais en %d\n", plate_pos_x);
+
 //Gere la double touche 
 		}
+		vTaskDelay(MS2TICKS(delay));
 	}
 }
 
@@ -400,40 +431,26 @@ void keyboard_interrupt_handler() {
 					memset(frame_buffer, 0, sizeof(frame_buffer)); // clear frame buffer
 					break;
 				case 79 :
-					if (!is_moving_right) {
-						change_move_right = 1;
-					}
 					is_moving_right = 1;
 					break;
 				case 80 :
-					if (!is_moving_left) {
-						change_move_left = 1;
-					}
 					is_moving_left = 1;
 					break;
 				default:
-					is_moving_left = 0;
-					is_moving_right = 0;
-					xprintf("On libere le mutex\n");
 //					xSemaphoreGiveFromISR(ksem, NULL);
 			}
-		} if (kdata & !KEYBOARD_DATA_PRESSED) {
+		} 
+		if (kdata & KEYBOARD_DATA_REPEAT) {
 			switch (KEYBOARD_KEY_CODE(kdata)) {
 			case 79 :
-				if (is_moving_right) {
-					change_move_right = 1;
-				}
-				is_moving_right = 0;
+				long_move_right = 1;
 				break;
 			case 80 :
-				if (is_moving_left) {
-					change_move_left = 1;
-				}
-				is_moving_left = 0;
+				long_move_left = 1;
 			default:
 				break;
 			}
-		}
+		} 
 	}
 }
 
