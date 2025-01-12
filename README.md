@@ -41,6 +41,7 @@ Les points à améliorer dans l'ordre :
     - gérer les collisions verticales et horizontales
     - utilser les interruptions souris -> sinon rester sur le clavier avec augmentation de la vitesse en fonction du temps d'appui
     - Faire des bonus
+    - Mettre un affichage de fin de niveau et de début de jeu
   
 Revoir ici les taches concurentes : ie bloquer la vidéo pour gérér la collision puis rendre la main
 
@@ -51,24 +52,35 @@ Auteur : Jérémy Couture
 
 # Objectif
 
-L'objectif de ce projet est de réaliser un casse brique émulé sur Mini-Risc Harvey. Il doit être jouable à la souris et proposant différents niveaux : mur, pyramide, pyramide inversée...
+L'objectif de ce projet est de réaliser un casse brique émulé sur Mini-Risc Harvey. Il doit être jouable au clavier et proposer différents niveaux : mur, pyramide, pyramide inversée avec un menu pour choisir le niveau. Cet objectif n'a pas été atteint et seul le niveau mur est jouable sans menu.
 
 # Fonctionnalités mise en place
 
+Les principales fonctionnalités mise en place sont l'affichage de rectangle et cercle de couleurs à l'aide de `draw_square` et `draw_disk`. Le déplacement de la bille, du plateau ainsi que l'affichage et effaçage des briques font directement appel à ces deux fonctions.
+
 # Mécanique du projet
 Le projet est organisé autour de plusieurs fonctions lancées en parallèle qui gèrent les mouvements, les collisions et l'affichage de la balle et du plateau.
-L'exécution du main initialise le périphérique vidéo et autorise les interruptions clavier/souris. Ensuite il initialise le mode de jeu, la bille et le plateau. A partir de cet instant ce sont les quatre tâches suivantes qui deviennent actives ainsi que deux interruptions qui se lancent :
+L'exécution du main initialise le périphérique vidéo et autorise les interruptions clavier/souris. Ensuite il initialise le mode de jeu, la bille et le plateau. A partir de cet instant ce sont les trois tâches et une fonction suivantes qui deviennent actives ainsi que deux interruptions qui se lancent :
   - `collision_plate`
   - `collision_brics`
   - `move_marble`
   - `move_plate`
 
 Voyons plus en détail chacune d'entre elles :
-- `collision_plate` : Cette fonction impose à la balle un rebond horizontal en cas de contact avec le rebord supérieur du plateau. Un délai a été introduit pour éviter deux appels immédiats de la fonction.
+- `collision_plate` : Cette fonction impose à la balle un rebond horizontal en cas de contact avec le rebord supérieur du plateau. Un délai a été introduit pour éviter deux appels immédiats de la fonction. De plus l'objectif initial été de changer l'angle de rebond de la bille en fonction du mouvement du plateau mais il semble que cette fonctionnalité bien que définie ne soit pas fonctionnelle.
 
-- `collision_brics` : Première des deux fonctions principales du programme, elle détecte les contacts entre la bille et les briques actives, impose des rebonds, désactive et efface les briques désactivées. Afin de ne pas utiliser inutillement des ressources elle ne s'active que si la bille est dans la zone d'existence des briques. Elle calcule si la bille touche les frontières horizontales ou verticales d'une brique et le cas échant appelle la fonction de rebond correspondante. Finalement elle met la variable is_active à 0 et dessine un rectangle noir sur l'emplacement de la brique.
+- `collision_brics` : Première des deux fonctions principales du programme, elle prend en argument la position future de la bille et vérifie si il y aura une collision. Elle renvoie le numéro de la brique responsable de la collision. Afin de ne pas utiliser inutillement des ressources elle ne s'active que si la bille est dans la zone d'existence des briques et parcourt la liste des briques en commençant par les lignes du bas. 
 
-- `move_marble` : Deuxième fonction principale du programme, elle calcule la position de la bille et l'affiche.
+- `move_marble` : Deuxième fonction principale du programme, elle calcule la position de la bille et l'affiche. Elle fait appel à `collision_brics` pour savoir si une collision aura lieu avec une brique. Le cas échéant elle appel la fonction de rebond associée, rend inactive et efface la brique responsable de la collision.
+
+ - `move_plate` : Cette fonction sert à déplacer le plateau à l'aide du clavier. Pour cela on vérifie dans l'ordre si il y a eu un appui long sur les flèches directionnelles ou une simple pression. Dans le premier cas on augmente/diminue la position du plateau en x en prenant en compte le temps d'appuie sur la touche. Dans le second cas on augmente/diminue simplement la position du plateau en x d'une constante.
+
 
 # Compilation et éxectution
 Le projet se compile et s'éxécute avec la ligne de commande `make exec` dans le répertoire source du projet.
+
+# Tentatives infructeuses 
+
+# Idées d'améliorations
+
+# Conclusion
