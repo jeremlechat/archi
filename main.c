@@ -14,48 +14,56 @@
 #include "font.h"
 #include <time.h>
 
-volatile int mouse_x = 0;
-volatile int mouse_y = 0;
-volatile int deplace_x_mouse = 0;
-volatile int plate_pos_x;   //position gauche du plateau
-volatile int plate_pos_y;	//position supérieure du plateau
-volatile int plate_height = 10;
-volatile int plate_width = 60;
-volatile int plate_y_shift = 30;
-volatile int marble_pos_x;
-volatile int marble_pos_y;
-volatile int marble_radius = 8;
-volatile float marble_speed = 4;
-volatile double marble_angle = 65*M_PI/180;		//L'angle est en radian
-volatile int left_button_is_pressed = 0;
-volatile int bric_height = 80;	
-volatile int bric_width = 60;
-volatile int ecart = 1;
-volatile int nb_bric_changed = 0;
-volatile int is_game_over = 1;
-volatile int delay = 20;
-volatile int is_moving_right = 0;
-volatile int is_moving_left = 0;
-volatile int long_move_right = 0;
-volatile int long_move_left = 0;
-volatile int long_press = 0;
-volatile clock_t start = 0;
-volatile int collision = -1;
-volatile int marble_right;
-volatile int marble_left;
-volatile int marble_top;
-volatile int marble_bottom;
-volatile int has_move_right = 0;
-volatile int has_move_left = 0;
+
+volatile int mouse_x = 0;          // Position X actuelle de la souris
+volatile int mouse_y = 0;          // Position Y actuelle de la souris
+volatile int deplace_x_mouse = 0;  // Déplacement horizontal de la souris
+volatile int left_button_is_pressed = 0;  // Indicateur d'appui sur le bouton gauche
+
+volatile int plate_pos_x;          // Position X du plateau (gauche)
+volatile int plate_pos_y;          // Position Y du plateau (haut)
+volatile int plate_height = 10;    // Hauteur du plateau
+volatile int plate_width = 60;     // Largeur du plateau
+volatile int plate_y_shift = 30;   // Décalage vertical du plateau par rapport au bas de l'écran
+
+volatile int marble_pos_x;         // Position X de la bille
+volatile int marble_pos_y;         // Position Y de la bille
+volatile int marble_radius = 8;    // Rayon de la bille
+volatile float marble_speed = 4;   // Vitesse de la bille
+volatile double marble_angle = 65 * M_PI / 180; // Angle initial de la bille (en radians)
+
+volatile int bric_height = 80;     // Hauteur d'une brique
+volatile int bric_width = 60;      // Largeur d'une brique
+volatile int ecart = 1;            // Écart entre les briques
+volatile int nb_bric_changed = 0;  // Nombre de briques détruites
 
 typedef struct brique {
-	int pos_x;
-	int pos_y;
-	int is_active;	
+    int pos_x;                     // Position X de la brique
+    int pos_y;                     // Position Y de la brique
+    int is_active;                 // Statut actif/inactif de la brique
 } brique;
 
-#define nb_bric 20					//Contient le nombre initial de briques
-volatile brique brics[nb_bric];		//Contient la liste de toutes les briques 
+#define nb_bric 20                 // Nombre total de briques
+volatile brique brics[nb_bric];    // Tableau contenant les briques
+
+volatile int is_game_over = 1;     // Indicateur de fin de jeu
+volatile int delay = 20;           // Délai entre les itérations des tâches
+volatile clock_t start = 0;        // Temps de départ pour certains calculs
+volatile int collision = -1;       // Type de collision (-1 = aucune, 0 = horizontale, 1 = verticale)
+
+volatile int is_moving_right = 0;  // Déplacement court vers la droite
+volatile int is_moving_left = 0;   // Déplacement court vers la gauche
+volatile int long_move_right = 0;  // Déplacement long vers la droite
+volatile int long_move_left = 0;   // Déplacement long vers la gauche
+volatile int long_press = 0;       // Indicateur d'appui prolongé
+volatile int has_move_right = 0;   // Compteur de mouvement vers la droite
+volatile int has_move_left = 0;    // Compteur de mouvement vers la gauche
+
+volatile int marble_right;         // Bord droit de la bille
+volatile int marble_left;          // Bord gauche de la bille
+volatile int marble_top;           // Bord supérieur de la bille
+volatile int marble_bottom;        // Bord inférieur de la bille
+
 
 // Clamp angle between 0 and 2π
 double clamp_angle(double angle) {
